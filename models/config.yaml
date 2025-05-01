@@ -1,0 +1,7 @@
+general:
+  device: 'mps'
+
+  model:
+    gamma: 2.0
+    sigma: 1.0
+
