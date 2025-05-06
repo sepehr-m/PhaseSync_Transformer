@@ -92,6 +92,12 @@ class PhaseSyncAttention(nn.Module):
 
         return S.permute(0, 3, 1, 2)  # [B, H, L, L]
 
+    def compute_tau_smoothness_loss(self, tau):
+        diff = tau[:, 1:, :] - tau[:, :-1, :]
+        loss = self.lambda_smooth * torch.mean(diff**2)
+
+        return loss
+
     def compute_hurst_smoothness_loss(self, hurst):
         diff = hurst[:, 1:, :] - hurst[:, :-1, :]
         loss = self.lambda_smooth * torch.mean(diff**2)
@@ -134,6 +140,7 @@ class PhaseSyncAttention(nn.Module):
         prior = prior / (prior.sum(dim=-1, keepdim=True) + 1e-6)
 
         smoothness_loss = self.compute_hurst_smoothness_loss(hurst)
+        tau_smoothness_loss = self.compute_tau_smoothness_loss(tau)
         beta_prior_loss = self.compute_beta_prior_loss(hurst)
 
         series = self.dropout(torch.softmax(attn, dim=-1))
@@ -148,6 +155,7 @@ class PhaseSyncAttention(nn.Module):
                 hurst,
                 smoothness_loss,
                 beta_prior_loss,
+                tau_smoothness_loss,
             )
         else:
             return (V.contiguous(), None)
@@ -200,9 +208,16 @@ class AttentionLayer(nn.Module):
         hurst = self.hurst_projection(x).view(B, L, H)
         tau = self.tau_projection(x).view(B, L, H)
 
-        out, series, prior, sigma, hurst, smoothness_loss, beta_prior_loss = (
-            self.attention(q, k, v, sigma, hurst, tau, attn_mask)
-        )
+        (
+            out,
+            series,
+            prior,
+            sigma,
+            hurst,
+            smoothness_loss,
+            beta_prior_loss,
+            tau_smoothness_loss,
+        ) = self.attention(q, k, v, sigma, hurst, tau, attn_mask)
 
         out = out.reshape(B, L, -1)
 
@@ -212,6 +227,8 @@ class AttentionLayer(nn.Module):
             prior,
             sigma,
             hurst,
+            tau,
             smoothness_loss,
             beta_prior_loss,
+            tau_smoothness_loss,
         )
