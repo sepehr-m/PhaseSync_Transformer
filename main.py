@@ -21,23 +21,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-
 class AnomalyDetection:
     def __init__(self, config_path, dataset):
         with open(config_path, "r") as f:
             self.config = yaml.safe_load(f)
 
         self.dataset = dataset
-        self.data_dir = self.config['general']['data_dir']
+        self.data_dir = self.config["general"]["data_dir"]
         self.data_path = os.path.join(self.data_dir, self.dataset)
 
-        self.model_save_path = self.config['general']['model_dir']
+        self.model_save_path = self.config["general"]["model_dir"]
 
-        self.data_config = self.config['data'][dataset]
-        self.model_config = self.config['model'][dataset]
+        self.data_config = self.config["data"][dataset]
+        self.model_config = self.config["model"][dataset]
         self.win_size = self.data_config["win_size"]
-        self.batch_size = self.data_config['batch_size']
-        self.anomaly_ratio = self.data_config['anomaly_ratio']
+        self.batch_size = self.data_config["batch_size"]
+        self.anomaly_ratio = self.data_config["anomaly_ratio"]
         self.enc_in = self.model_config["enc_in"]
         self.c_out = self.model_config["c_out"]
         self.e_layers = self.model_config["e_layers"]
@@ -46,43 +45,41 @@ class AnomalyDetection:
         self.lambda_smooth = self.config["model"]["lambda_smooth"]
         self.lr = self.config["training"]["lr"]
         self.n_epochs = self.config["training"]["n_epochs"]
-        self.k = self.config['training']['k']
+        self.k = self.config["training"]["k"]
         self.temperature = self.config["testing"]["temperature"]
         self.device = self.config["general"]["device"]
 
         self.train_loader = get_loader(
-                self.data_path,
-                batch_size=self.batch_size,
-                win_size=self.win_size,
-                mode='train',
-                dataset=self.dataset
-                )
-        
-        self.vali_loader = get_loader(
-                self.data_path,
-                batch_size=self.batch_size,
-                win_size=self.win_size,
-                mode='val',
-                dataset=self.dataset
-                )
+            self.data_path,
+            batch_size=self.batch_size,
+            win_size=self.win_size,
+            mode="train",
+            dataset=self.dataset,
+        )
 
+        self.vali_loader = get_loader(
+            self.data_path,
+            batch_size=self.batch_size,
+            win_size=self.win_size,
+            mode="val",
+            dataset=self.dataset,
+        )
 
         self.test_loader = get_loader(
-                self.data_path,
-                batch_size=self.batch_size,
-                win_size=self.win_size,
-                mode='test',
-                dataset=self.dataset
-                )
-
+            self.data_path,
+            batch_size=self.batch_size,
+            win_size=self.win_size,
+            mode="test",
+            dataset=self.dataset,
+        )
 
         self.thre_loader = get_loader(
-                self.data_path,
-                batch_size=self.batch_size,
-                win_size=self.win_size,
-                mode='thre',
-                dataset=self.dataset
-                )
+            self.data_path,
+            batch_size=self.batch_size,
+            win_size=self.win_size,
+            mode="thre",
+            dataset=self.dataset,
+        )
 
         self.criterion = nn.MSELoss()
         self.global_hurst = None
@@ -111,7 +108,7 @@ class AnomalyDetection:
 
     def compute_distillation_loss(self, hurst):
         if self.global_hurst is None or torch.isnan(self.global_hurst).any():
-            logger.warning('Skipping distillation loss due to invalid global hurst')
+            logger.warning("Skipping distillation loss due to invalid global hurst")
             return torch.tensor(0.0, device=self.device, requires_grad=True)
         mean_hurst = torch.mean(hurst, dim=[1, 2])  # B
         mean_global_hurst = torch.mean(self.global_hurst)  # scalar
@@ -178,7 +175,9 @@ class AnomalyDetection:
             self.model_save_path, f"{self.dataset}_global_hurst.pt"
         )
         if os.path.exists(hurst_path):
-            self.global_hurst = torch.load(hurst_path).to(self.device)
+            self.global_hurst = torch.load(hurst_path, weights_only=True).to(
+                self.device
+            )
             logger.info(f"Loaded global hurst from {hurst_path}.")
 
         if self.global_hurst is None:
@@ -289,13 +288,14 @@ class AnomalyDetection:
             torch.load(
                 os.path.join(
                     str(self.model_save_path), str(self.dataset) + "_checkpoint.pth"
-                )
+                ),
+                weights_only=True,
             )
         )
         self.model.eval()
         temperature = self.temperature
         logger.info("--------------- Test mode ---------------")
-        criterion = nn.MSELoss(reduce=False)
+        criterion = nn.MSELoss(reduction="none")
 
         attens_energy = []
         for i, (input_data, labels) in enumerate(self.train_loader):
@@ -479,7 +479,6 @@ class AnomalyDetection:
         return accuracy, precision, recall, f_score
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
@@ -488,11 +487,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     cudnn.benchmark = True
-    detector = AnomalyDetection(
-            config_path='config.yaml',
-            dataset=args.dataset
-            )
-    if args.mode == 'train':
+    detector = AnomalyDetection(config_path="config.yaml", dataset=args.dataset)
+    if args.mode == "train":
         detector.train()
-    elif args.mode == 'test':
+    elif args.mode == "test":
         detector.test()
