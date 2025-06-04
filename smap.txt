@@ -1,0 +1,4 @@
+2025-06-04 11:33:13,925 - INFO - --------------- Test mode ---------------
+Threshold : 0.20487719357013717
+Accuracy : 0.9948, Precision : 0.9447, Recall : 1.0000, F-score : 0.9715
+(base) sepehr@Sepehrs-MacBook-Pro-2 PhaseSync_Transformer %

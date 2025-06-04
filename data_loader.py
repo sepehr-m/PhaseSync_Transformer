@@ -13,6 +13,64 @@ from sklearn.preprocessing import StandardScaler
 import pickle
 
 
+class MSLDataset(object):
+    def __init__(self, data_path, win_size, step, mode="train"):
+        self.mode = mode
+        self.step = step
+        self.win_size = win_size
+        self.scaler = StandardScaler()
+        data = np.load(data_path + "/MSL_train.npy")
+        self.scaler.fit(data)
+        data = self.scaler.transform(data)
+        test_data = np.load(data_path + "/MSL_test.npy")
+        self.test = self.scaler.transform(test_data)
+
+        self.train = data
+        self.val = self.test
+        self.test_labels = np.load(data_path + "/MSL_test_label.npy")
+        print("test:", self.test.shape)
+        print("train:", self.train.shape)
+
+    def __len__(self):
+        if self.mode == "train":
+            return (self.train.shape[0] - self.win_size) // self.step + 1
+        elif self.mode == "val":
+            return (self.val.shape[0] - self.win_size) // self.step + 1
+        elif self.mode == "test":
+            return (self.test.shape[0] - self.win_size) // self.step + 1
+        else:
+            return (self.test.shape[0] - self.win_size) // self.win_size + 1
+
+    def __getitem__(self, index):
+        index = index * self.step
+        if self.mode == "train":
+            return np.float32(self.train[index : index + self.win_size]), np.float32(
+                self.test_labels[0 : self.win_size]
+            )
+        elif self.mode == "val":
+            return np.float32(self.val[index : index + self.win_size]), np.float32(
+                self.test_labels[0 : self.win_size]
+            )
+        elif self.mode == "test":
+            return np.float32(self.test[index : index + self.win_size]), np.float32(
+                self.test_labels[index : index + self.win_size]
+            )
+        else:
+            return np.float32(
+                self.test[
+                    index // self.step * self.win_size : index
+                    // self.step
+                    * self.win_size
+                    + self.win_size
+                ]
+            ), np.float32(
+                self.test_labels[
+                    index // self.step * self.win_size : index
+                    // self.step
+                    * self.win_size
+                    + self.win_size
+                ]
+            )
 
 class SMAPDataset(object):
     def __init__(self, data_path, win_size, step, mode="train"):
@@ -33,12 +91,11 @@ class SMAPDataset(object):
         print("train:", self.train.shape)
 
     def __len__(self):
-
         if self.mode == "train":
             return (self.train.shape[0] - self.win_size) // self.step + 1
-        elif (self.mode == 'val'):
+        elif self.mode == "val":
             return (self.val.shape[0] - self.win_size) // self.step + 1
-        elif (self.mode == 'test'):
+        elif self.mode == "test":
             return (self.test.shape[0] - self.win_size) // self.step + 1
         else:
             return (self.test.shape[0] - self.win_size) // self.win_size + 1
@@ -46,31 +103,54 @@ class SMAPDataset(object):
     def __getitem__(self, index):
         index = index * self.step
         if self.mode == "train":
-            return np.float32(self.train[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'val'):
-            return np.float32(self.val[index:index + self.win_size]), np.float32(self.test_labels[0:self.win_size])
-        elif (self.mode == 'test'):
-            return np.float32(self.test[index:index + self.win_size]), np.float32(
-                self.test_labels[index:index + self.win_size])
+            return np.float32(self.train[index : index + self.win_size]), np.float32(
+                self.test_labels[0 : self.win_size]
+            )
+        elif self.mode == "val":
+            return np.float32(self.val[index : index + self.win_size]), np.float32(
+                self.test_labels[0 : self.win_size]
+            )
+        elif self.mode == "test":
+            return np.float32(self.test[index : index + self.win_size]), np.float32(
+                self.test_labels[index : index + self.win_size]
+            )
         else:
-            return np.float32(self.test[
-                              index // self.step * self.win_size:index // self.step * self.win_size + self.win_size]), np.float32(
-                self.test_labels[index // self.step * self.win_size:index // self.step * self.win_size + self.win_size])
+            return np.float32(
+                self.test[
+                    index // self.step * self.win_size : index
+                    // self.step
+                    * self.win_size
+                    + self.win_size
+                ]
+            ), np.float32(
+                self.test_labels[
+                    index // self.step * self.win_size : index
+                    // self.step
+                    * self.win_size
+                    + self.win_size
+                ]
+            )
 
 
-
-
-def get_loader(data_path, batch_size, win_size=100, step=100, mode='train', dataset='KDD'):
-
-    dataset = SMAPDataset(data_path, win_size, 1, mode)
-
+def get_loader(
+    data_path, batch_size, win_size=100, step=100, mode="train", dataset="none"
+):
+    if dataset == 'SMAP': 
+        dataset = SMAPDataset(data_path, win_size, 1, mode)
+    elif dataset == 'MSL':
+        dataset = MSLDataset(data_path, win_size, 1, mode)
+    elif dataset == 'SMD':
+        dataset = SMDDataset(data_path, win_size, 1, mode)
+    elif dataset == 'SWaT':
+        dataset = SWaTDataset(data_path, win_size, 1, mode)
+    else:
+        raise ValueError(f"Dataset {dataset} is not recognised.")
 
     shuffle = False
-    if mode == 'train':
+    if mode == "train":
         shuffle = True
 
-    data_loader = DataLoader(dataset=dataset,
-                             batch_size=batch_size,
-                             shuffle=shuffle,
-                             num_workers=0)
+    data_loader = DataLoader(
+        dataset=dataset, batch_size=batch_size, shuffle=shuffle, num_workers=0
+    )
     return data_loader

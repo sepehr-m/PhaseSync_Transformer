@@ -8,6 +8,10 @@ data:
     win_size: 100
     batch_size: 512
     anomaly_ratio: 0.5
+  MSL:
+    win_size: 100
+    batch_size: 256
+    anomaly_ratio: 0.5
 
 model:
   gamma: 2.0
@@ -16,6 +20,10 @@ model:
   SMAP:
     enc_in: 25
     c_out: 25
+    e_layers: 3
+  MSL:
+    enc_in: 55
+    c_out: 55
     e_layers: 3
 
 training:

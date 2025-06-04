@@ -255,7 +255,7 @@ class AnomalyDetection:
 
                 if (i + 1) % 100 == 0:
                     speed = (time.time() - time_now) / iter_count
-                    left_time = speed * ((self.num_epochs - epoch) * train_steps - i)
+                    left_time = speed * ((self.n_epochs - epoch) * train_steps - i)
                     logger.info(
                         "\tspeed: {:.4f}s/iter; left time: {:.4f}s".format(
                             speed, left_time
