@@ -2,3 +2,8 @@
 Threshold : 0.20487719357013717
 Accuracy : 0.9948, Precision : 0.9447, Recall : 1.0000, F-score : 0.9715
 (base) sepehr@Sepehrs-MacBook-Pro-2 PhaseSync_Transformer %
+
+2025-07-09 10:28:00,719 - INFO - --------------- Test mode ---------------
+Threshold : 0.02980409543961436
+Accuracy : 0.9599, Precision : 0.9652, Recall : 0.7122, F-score : 0.8196
+(base) sepehr@Sepehrs-MacBook-Pro-2 PhaseSync_Transformer %
